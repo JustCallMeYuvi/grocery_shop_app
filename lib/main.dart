@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_core/firebase_core.dart';
@@ -15,65 +17,102 @@ final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
     FlutterLocalNotificationsPlugin();
 @pragma('vm:entry-point')
 Future<void> _firebaseMessagingBackgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  print("🔔 Background Message: ${message.messageId}");
-}
-
-void main() async {
-  WidgetsFlutterBinding.ensureInitialized();
-  // await Firebase.initializeApp(
-  //   options: DefaultFirebaseOptions.currentPlatform, // 👈 IMPORTANT
-  // );
-
-  if (kIsWeb) {
+  if (kIsWeb || Platform.isWindows) {
     await Firebase.initializeApp(
       options: DefaultFirebaseOptions.currentPlatform,
     );
   } else {
     await Firebase.initializeApp();
+  }
 
-    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+  print("🔔 Background Message: ${message.messageId}");
+}
 
-    await FirebaseMessaging.instance.requestPermission();
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  // ✅ Always initialize like this for ALL platforms
+
+  // ✅ Prevent duplicate app error
+  // 🔥 SAFE INITIALIZATION FOR ALL PLATFORMS
+
+  if (kIsWeb) {
+    // 🌐 Web
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } else if (Platform.isWindows) {
+    // 🖥 Windows
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+  } else {
+    // 📱 Android / iOS
+    await Firebase.initializeApp();
+  }
+
+  // if (kIsWeb) {
+  //   await Firebase.initializeApp(
+  //     options: DefaultFirebaseOptions.currentPlatform,
+  //   );
+  // } else {
+  //   await Firebase.initializeApp();
+
+  //   FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+  //   await FirebaseMessaging.instance.requestPermission();
+  //   const AndroidInitializationSettings androidSettings =
+  //       AndroidInitializationSettings('@mipmap/ic_launcher');
+
+  //   const InitializationSettings initSettings =
+  //       InitializationSettings(android: androidSettings);
+
+  //   await flutterLocalNotificationsPlugin.initialize(initSettings);
+
+  // ✅ Only enable FCM for Android/iOS
+  if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
+    // ✅ Initialize local notifications (VERY IMPORTANT)
     const AndroidInitializationSettings androidSettings =
         AndroidInitializationSettings('@mipmap/ic_launcher');
 
     const InitializationSettings initSettings =
         InitializationSettings(android: androidSettings);
-
     await flutterLocalNotificationsPlugin.initialize(initSettings);
+
+    // ✅ Background handler
+    FirebaseMessaging.onBackgroundMessage(_firebaseMessagingBackgroundHandler);
+
+    await FirebaseMessaging.instance.requestPermission();
 
     String? token = await FirebaseMessaging.instance.getToken();
     print("🔥 DIRECT TOKEN FROM MAIN: $token");
 
     // ✅ ADD THIS 👇 (Foreground Listener)
-  FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
-  RemoteNotification? notification = message.notification;
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) async {
+      RemoteNotification? notification = message.notification;
 
-  if (notification != null) {
-    const AndroidNotificationDetails androidDetails =
-        AndroidNotificationDetails(
-      'order_channel',
-      'Order Notifications',
-      channelDescription: 'Order status updates',
-      importance: Importance.max,
-      priority: Priority.high,
-      playSound: true,
-    );
+      if (notification != null) {
+        const AndroidNotificationDetails androidDetails =
+            AndroidNotificationDetails(
+          'order_channel',
+          'Order Notifications',
+          channelDescription: 'Order status updates',
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
+          icon: '@mipmap/ic_launcher', // ✅ REQUIRED
+        );
 
-    const NotificationDetails details =
-        NotificationDetails(android: androidDetails);
+        const NotificationDetails details =
+            NotificationDetails(android: androidDetails);
 
-    await flutterLocalNotificationsPlugin.show(
-      notification.hashCode,
-      notification.title,
-      notification.body,
-      details,
-    );
-  }
-});
+        await flutterLocalNotificationsPlugin.show(
+          notification.hashCode,
+          notification.title,
+          notification.body,
+          details,
+        );
+      }
+    });
 
     FirebaseMessaging.instance.onTokenRefresh.listen((newToken) async {
       final user = FirebaseAuth.instance.currentUser;

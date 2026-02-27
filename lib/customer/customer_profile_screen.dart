@@ -1,21 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:grocery_shop_app/customer/address_screen.dart';
 
 class CustomerProfileScreen extends StatefulWidget {
   const CustomerProfileScreen({super.key});
 
   @override
-  State<CustomerProfileScreen> createState() =>
-      _CustomerProfileScreenState();
+  State<CustomerProfileScreen> createState() => _CustomerProfileScreenState();
 }
 
-class _CustomerProfileScreenState
-    extends State<CustomerProfileScreen> {
-
+class _CustomerProfileScreenState extends State<CustomerProfileScreen> {
   final nameController = TextEditingController();
   final phoneController = TextEditingController();
-  final addressController = TextEditingController();
 
   bool isLoading = true;
   bool isSaving = false;
@@ -38,7 +35,6 @@ class _CustomerProfileScreenState
       final data = doc.data()!;
       nameController.text = data['name'] ?? '';
       phoneController.text = data['phone'] ?? '';
-      addressController.text = data['address'] ?? '';
     }
 
     setState(() => isLoading = false);
@@ -47,13 +43,9 @@ class _CustomerProfileScreenState
   Future<void> saveProfile() async {
     setState(() => isSaving = true);
 
-    await FirebaseFirestore.instance
-        .collection('users')
-        .doc(user!.uid)
-        .update({
+    await FirebaseFirestore.instance.collection('users').doc(user!.uid).update({
       'name': nameController.text.trim(),
       'phone': phoneController.text.trim(),
-      'address': addressController.text.trim(),
     });
 
     setState(() => isSaving = false);
@@ -82,7 +74,6 @@ class _CustomerProfileScreenState
             padding: const EdgeInsets.all(20),
             child: ListView(
               children: [
-
                 /// NAME
                 TextField(
                   controller: nameController,
@@ -118,26 +109,31 @@ class _CustomerProfileScreenState
 
                 const SizedBox(height: 15),
 
-                /// ADDRESS
-                TextField(
-                  controller: addressController,
-                  maxLines: 3,
-                  decoration: const InputDecoration(
-                    labelText: "Address",
-                    border: OutlineInputBorder(),
-                  ),
-                ),
-
-                const SizedBox(height: 25),
-
                 ElevatedButton(
                   onPressed: isSaving ? null : saveProfile,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.green,
-                    minimumSize:
-                        const Size(double.infinity, 50),
+                    minimumSize: const Size(double.infinity, 50),
                   ),
                   child: const Text("Save"),
+                ),
+
+                const SizedBox(height: 15),
+
+                ElevatedButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (_) => const AddressScreen(),
+                      ),
+                    );
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.orange,
+                    minimumSize: const Size(double.infinity, 50),
+                  ),
+                  child: const Text("Manage Addresses"),
                 ),
               ],
             ),

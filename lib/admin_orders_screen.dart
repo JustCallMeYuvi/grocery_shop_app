@@ -491,6 +491,34 @@ class AdminOrdersScreen extends StatelessWidget {
                 style: const TextStyle(fontSize: 12),
               ),
               const SizedBox(height: 10),
+              const Text(
+                "Delivery Address",
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 5),
+              // if (data['address'] != null)
+              if (data.containsKey('address'))
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: Colors.green.shade50,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(data['address']['name']),
+                      Text(data['address']['phone']),
+                      Text(
+                        "${data['address']['houseNo']}, ${data['address']['street']}",
+                      ),
+                      Text(
+                        "${data['address']['city']} - ${data['address']['pincode']}",
+                      ),
+                    ],
+                  ),
+                ),
+              const SizedBox(height: 10),
               buildOrderTracking(context, order.id, status, data),
               const Divider(),
               Column(

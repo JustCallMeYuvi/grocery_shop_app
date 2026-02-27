@@ -297,8 +297,40 @@ class ProductDetailScreen extends StatefulWidget {
 }
 
 class _ProductDetailScreenState extends State<ProductDetailScreen> {
+  DocumentSnapshot? defaultAddress;
+  bool isLoadingAddress = true;
+
   bool _isLoading = false;
   @override
+  @override
+  void initState() {
+    super.initState();
+    loadDefaultAddress();
+  }
+
+  Future<void> loadDefaultAddress() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    var snapshot = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(user.uid)
+        .collection('addresses')
+        .where("isDefault", isEqualTo: true)
+        .limit(1)
+        .get();
+
+    if (snapshot.docs.isNotEmpty) {
+      defaultAddress = snapshot.docs.first;
+    }
+
+    if (mounted) {
+      setState(() {
+        isLoadingAddress = false;
+      });
+    }
+  }
+
   Widget build(BuildContext context) {
     final data = widget.product.data() as Map<String, dynamic>;
 
@@ -525,7 +557,13 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
 
     final price = data['price'] ?? 0;
     final name = data['name'] ?? "No Name";
-
+    if (defaultAddress == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text("Please select default address")),
+      );
+      setState(() => _isLoading = false);
+      return;
+    }
     try {
       await firestore.runTransaction((transaction) async {
         DocumentReference productRef =
@@ -546,6 +584,19 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
         transaction.set(orderRef, {
           'userId': user.uid,
           'userEmail': user.email,
+
+          // 🔥 ADD THIS
+          'address': {
+            'name': defaultAddress!['name'],
+            'phone': defaultAddress!['phone'],
+            'houseNo': defaultAddress!['houseNo'],
+            'street': defaultAddress!['street'],
+            'area': defaultAddress!['area'],
+            'city': defaultAddress!['city'],
+            'state': defaultAddress!['state'],
+            'pincode': defaultAddress!['pincode'],
+          },
+
           'items': {
             widget.product.id: {"name": name, "price": price, "qty": 1}
           },
@@ -554,9 +605,9 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
           'createdAt': Timestamp.now(),
           'statusHistory': {
             'Placed': FieldValue.serverTimestamp(),
-          },
+          }
         });
-      }); 
+      });
 
       _showSuccessDialog();
     } catch (e) {

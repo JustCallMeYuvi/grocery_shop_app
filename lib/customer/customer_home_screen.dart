@@ -75,6 +75,7 @@ class _CustomerHomeScreenState extends State<CustomerHomeScreen> {
       importance: Importance.max,
       priority: Priority.high,
       playSound: true,
+          icon: '@mipmap/ic_launcher', // ✅ VERY IMPORTANT
     );
 
     const NotificationDetails details =

@@ -4,7 +4,10 @@
     <application
         android:label="grocery_shop_app"
         android:name="${applicationName}"
-        android:icon="@mipmap/ic_launcher">
+        android:icon="@mipmap/grocery_icon"
+        android:roundIcon="@mipmap/grocery_icon"
+        >
+        
         <activity
             android:name=".MainActivity"
             android:exported="true"
